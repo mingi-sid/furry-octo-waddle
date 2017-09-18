@@ -133,9 +133,9 @@ def find_hazard_1st_column(board, P1robots, P2robots):
                     if posX < 0 or posX >= game_data['W'] or \
                            posY < 0 or posY >= game_data['H']:
                         break
-                    if board[posX][posY] in [PAWN.P1MIRROR1, PAWN.P2MIRROR1]:
+                    if board[posY][posX] in [PAWN.P1MIRROR1, PAWN.P2MIRROR1]:
                         beamDir = mirror1Map[beamDir]
-                    elif board[posX][posY] in [PAWN.P1MIRROR2, PAWN.P2MIRROR2]:
+                    elif board[posY][posX] in [PAWN.P1MIRROR2, PAWN.P2MIRROR2]:
                         beamDir = mirror2Map[beamDir]
                     if posX == 0:
                         hazardCell.append((posX, posY))
