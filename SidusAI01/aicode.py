@@ -7,7 +7,7 @@ game_data = {}
 
 #Returns all possible list of (P1move, P2move)
 def generate_all_moves(board, P1robots, P2robots):
-    allRobotMove = [[tuple(action, direction),] for action in ACTION\
+    allRobotMove = [[tuple([action, direction]),] for action in ACTION\
                    for direction in DIRECTION]
     allP1move = []
     allP1move3 = [[move1, move2, move3] for move1 in allRobotMove for move2 in allRobotMove\
@@ -37,7 +37,7 @@ def generate_all_moves(board, P1robots, P2robots):
     for i in range(len(P1robots)):
         pass
 
-    allMove = [tuple(p1, p2) for p1 in allP1move for p2 in allP2move]
+    allMove = [tuple([p1, p2]) for p1 in allP1move for p2 in allP2move]
     return allMove
 
 #Simulate the next board state
@@ -122,22 +122,23 @@ def find_hazard_1st_column(board, P1robots, P2robots):
             DIRECTION.DOWN : DIRECTION.LEFT,\
             DIRECTION.LEFT : DIRECTION.UP}
     for robot in P2robots:
-        posX = P2robots.X
-        posY = P2robots.Y
-        for direction in DIRECTION: 
-            beamDir = direction
-            for i in range(91):
-                posX += directionMap[beamDir][0]
-                posY += directionMap[beamDir][1]
-                if posX < 0 or posX >= game_data['W'] or \
-                       posY < 0 or posY >= game_data['H']:
-                    break
-                if board[posX][posY] in [PAWN.P1MIRROR1, PAWN.P2MIRROR1]:
-                    beamDir = mirror1Map[beamDir]
-                elif board[posX][posY] in [PAWN.P1MIRROR2, PAWN.P2MIRROR2]:
-                    beamDir = mirror2Map[beamDir]
-                if posX == 0:
-                    hazardCell.append((posX, posY))
+        if robot.CooldownLaser <= 0:
+            posX = robot.X
+            posY = robot.Y
+            for direction in DIRECTION: 
+                beamDir = direction
+                for i in range(91):
+                    posX += directionMap[beamDir][0]
+                    posY += directionMap[beamDir][1]
+                    if posX < 0 or posX >= game_data['W'] or \
+                           posY < 0 or posY >= game_data['H']:
+                        break
+                    if board[posX][posY] in [PAWN.P1MIRROR1, PAWN.P2MIRROR1]:
+                        beamDir = mirror1Map[beamDir]
+                    elif board[posX][posY] in [PAWN.P1MIRROR2, PAWN.P2MIRROR2]:
+                        beamDir = mirror2Map[beamDir]
+                    if posX == 0:
+                        hazardCell.append((posX, posY))
     return hazardCell
 
 def eval_default(board, P1robots, P2robots):
@@ -169,11 +170,38 @@ def move_random(board, P1robots, P2robots):
 
 def move_line_fire(board, P1robots, P2robots):
     ret = []
-    for i in P1robots:
-        if i.CooldownLaser == 0:
+    hazardCell = find_hazard_1st_column(board, P1robots, P2robots)
+    nonHazardCell = [y for y in [tuple([0, x]) for x in range(game_data['H'])]\
+                        if y not in hazardCell]
+    movingIn = []
+    for robot in P1robots:
+        if (robot.X, robot.Y) in hazardCell:
+            if (robot.X, robot.Y - 1) in nonHazardCell:
+                ret.append(RobotMove(ACTION.MOVE, DIRECTION.UP))
+                nonHazardCell.remove((robot.X, robot.Y - 1))
+                movingIn.append((robot.X, robot.Y - 1))
+            elif (robot.X, robot.Y + 1) in nonHazardCell:
+                ret.append(RobotMove(ACTION.MOVE, DIRECTION.DOWN))
+                nonHazardCell.remove((robot.X, robot.Y + 1))
+                movingIn.append((robot.X, robot.Y + 1))
+            else:
+                if game_data['turn'] > 13 or i.CooldownLaser > 0:
+                    if robot.Y <= 3:
+                        ret.append(RobotMove(ACTION.PLACEMIRROR1), DIRECTION.RIGHT)
+                        movingIn.append((robot.X, robot.Y))
+                    else:
+                        ret.append(RobotMove(ACTION.PLACEMIRROR2), DIRECTION.RIGHT)
+                        movingIn.append((robot.X, robot.Y))
+                else:
+                    ret.append(RobotMove(ACTION.SHOT, DIRECTION.RIGHT))
+                    movingIn.append((robot.X, robot.Y))
+        if robot.CooldownLaser == 0:
             ret.append(RobotMove(ACTION.SHOT, DIRECTION.RIGHT))
         else:
             ret.append(RobotMove(ACTION.MOVE, random.choice([DIRECTION.UP, DIRECTION.DOWN])))
+            '''
+            if
+            '''
     return ret
 
 def Init(height, width, cooldownMirror, cooldownLaser, gameTurn):
